@@ -1,0 +1,352 @@
+version: "3.8"
+
+services:
+  # Databases
+  postgres:
+    image: postgres:15
+    container_name: exchange-postgres
+    environment:
+      POSTGRES_DB: exchange_rate_db
+      POSTGRES_USER: exchange_user
+      POSTGRES_PASSWORD: exchange_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - exchange_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: exchange-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - exchange_network
+
+  # Core Services
+  pricing-core:
+    build:
+      context: ./services/pricing-core
+      dockerfile: Dockerfile
+    container_name: pricing-core-service
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_ENV=development
+      - PORT=4001
+      - DB_HOST=postgres
+      - DB_PORT=5433
+      - DB_NAME=exchange_rate_db
+      - DB_USER=exchange_user
+      - DB_PASS=exchange_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/pricing-core:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  p2p-parser:
+    build:
+      context: ./services/p2p-parser
+      dockerfile: Dockerfile
+    container_name: p2p-parser-service
+    ports:
+      - "4002:4002"
+    environment:
+      - NODE_ENV=development
+      - PORT=4002
+      - DB_HOST=postgres
+      - DB_PORT=5433
+      - DB_NAME=exchange_rate_db
+      - DB_USER=exchange_user
+      - DB_PASS=exchange_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - BYBIT_API_URL=https://api.bybit.com
+      - HTX_API_URL=https://api.huobi.pro
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/p2p-parser:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  rapira-parser:
+    build:
+      context: ./services/rapira-parser
+      dockerfile: Dockerfile
+    container_name: rapira-parser-service
+    ports:
+      - "4003:4003"
+    environment:
+      - NODE_ENV=development
+      - PORT=4003
+      - DB_HOST=postgres
+      - DB_PORT=5433
+      - DB_NAME=exchange_rate_db
+      - DB_USER=exchange_user
+      - DB_PASS=exchange_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RAPIRA_API_URL=https://api.rapira.exchange
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/rapira-parser:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  deal-automation:
+    build:
+      context: ./services/deal-automation
+      dockerfile: Dockerfile
+    container_name: deal-automation-service
+    ports:
+      - "4004:4004"
+    environment:
+      - NODE_ENV=development
+      - PORT=4004
+      - DB_HOST=postgres
+      - DB_PORT=5433
+      - DB_NAME=exchange_rate_db
+      - DB_USER=exchange_user
+      - DB_PASS=exchange_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PRICING_CORE_URL=http://pricing-core:4001
+    depends_on:
+      - postgres
+      - redis
+      - pricing-core
+    volumes:
+      - ./services/deal-automation:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "4005:4005"
+    environment:
+      - NODE_ENV=development
+      - PORT=4005
+      - DB_HOST=postgres
+      - DB_PORT=5433
+      - DB_NAME=exchange_rate_db
+      - DB_USER=exchange_user
+      - DB_PASS=exchange_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/notification-service:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  reporting-service:
+    build:
+      context: ./services/reporting-service
+      dockerfile: Dockerfile
+    container_name: reporting-service
+    ports:
+      - "4006:4006"
+    environment:
+      - NODE_ENV=development
+      - PORT=4006
+      - DB_HOST=postgres
+      - DB_PORT=5433
+      - DB_NAME=exchange_rate_db
+      - DB_USER=exchange_user
+      - DB_PASS=exchange_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/reporting-service:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  # Frontend Applications
+  api-gateway:
+    build:
+      context: ./apps/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - PRICING_CORE_URL=http://pricing-core:4001
+      - P2P_PARSER_URL=http://p2p-parser:4002
+      - RAPIRA_PARSER_URL=http://rapira-parser:4003
+      - DEAL_AUTOMATION_URL=http://deal-automation:4004
+      - NOTIFICATION_SERVICE_URL=http://notification-service:4005
+      - REPORTING_SERVICE_URL=http://reporting-service:4006
+      - JWT_SECRET=${JWT_SECRET:-default-jwt-secret}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - pricing-core
+      - p2p-parser
+      - rapira-parser
+      - deal-automation
+      - notification-service
+      - reporting-service
+    volumes:
+      - ./apps/api-gateway:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  manager-panel:
+    build:
+      context: ./apps/manager-panel
+      dockerfile: Dockerfile
+    container_name: manager-panel
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3002
+      - NEXT_PUBLIC_WS_URL=ws://localhost:3002
+    depends_on:
+      - api-gateway
+    volumes:
+      - ./apps/manager-panel:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  partner-cabinet:
+    build:
+      context: ./apps/partner-cabinet
+      dockerfile: Dockerfile
+    container_name: partner-cabinet
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3002
+      - NEXT_PUBLIC_WS_URL=ws://localhost:3002
+    depends_on:
+      - api-gateway
+    volumes:
+      - ./apps/partner-cabinet:/app
+      - /app/node_modules
+    networks:
+      - exchange_network
+
+  # Monitoring & Analytics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: exchange-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=200h"
+      - "--web.enable-lifecycle"
+    networks:
+      - exchange_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: exchange-grafana
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./monitoring/grafana:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - exchange_network
+
+  elasticsearch:
+    image: elasticsearch:8.9.0
+    container_name: exchange-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - exchange_network
+
+  kibana:
+    image: kibana:8.9.0
+    container_name: exchange-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - exchange_network
+
+  # Message Queue (for high-volume scenarios)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: exchange-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=exchange
+      - RABBITMQ_DEFAULT_PASS=exchange_pass
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - exchange_network
+
+networks:
+  exchange_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
+  rabbitmq_data:

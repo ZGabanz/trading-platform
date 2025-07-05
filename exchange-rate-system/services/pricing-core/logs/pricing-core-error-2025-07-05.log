@@ -1,0 +1,8 @@
+{"timestamp":"2025-07-05 10:03:26","level":"error","service":"pricing-core","message":"Authentication error","error":"Authorization header is required","path":"/v1/pricing/rate/USDT-EUR"}
+{"timestamp":"2025-07-05 10:39:01","level":"error","service":"pricing-core","message":"Authentication error","error":"Authorization header is required","path":"/v1/pricing/rates"}
+{"timestamp":"2025-07-05 10:39:10","level":"error","service":"pricing-core","message":"Authentication error","error":"Authorization header is required","path":"/v1/pricing/rates"}
+{"timestamp":"2025-07-05 10:39:50","level":"error","service":"pricing-core","message":"Authentication error","error":"Authorization header is required","path":"/v1/pricing/rates"}
+{"timestamp":"2025-07-05 10:40:02","level":"error","service":"pricing-core","message":"Authentication error","error":"Authorization header is required","path":"/v1/pricing/rates"}
+{"timestamp":"2025-07-05 10:40:32","level":"error","service":"pricing-core","message":"Authentication error","error":"Authorization header is required","path":"/v1/pricing/rates"}
+{"timestamp":"2025-07-05 10:41:02","level":"error","service":"pricing-core","message":"Authentication error","error":"Authorization header is required","path":"/v1/pricing/rates"}
+{"timestamp":"2025-07-05 10:41:32","level":"error","service":"pricing-core","message":"Authentication error","error":"Authorization header is required","path":"/v1/pricing/rates"}

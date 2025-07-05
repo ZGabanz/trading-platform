@@ -1,0 +1,82 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # API Gateway
+  - job_name: "api-gateway"
+    static_configs:
+      - targets: ["api-gateway:3002"]
+    metrics_path: "/metrics"
+    scrape_interval: 30s
+
+  # Pricing Core Service
+  - job_name: "pricing-core"
+    static_configs:
+      - targets: ["pricing-core:4001"]
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # P2P Parser Service
+  - job_name: "p2p-parser"
+    static_configs:
+      - targets: ["p2p-parser:4002"]
+    metrics_path: "/metrics"
+    scrape_interval: 30s
+
+  # Rapira Parser Service
+  - job_name: "rapira-parser"
+    static_configs:
+      - targets: ["rapira-parser:4003"]
+    metrics_path: "/metrics"
+    scrape_interval: 30s
+
+  # Deal Automation Service
+  - job_name: "deal-automation"
+    static_configs:
+      - targets: ["deal-automation:4004"]
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # Notification Service
+  - job_name: "notification-service"
+    static_configs:
+      - targets: ["notification-service:4005"]
+    metrics_path: "/metrics"
+    scrape_interval: 60s
+
+  # Reporting Service
+  - job_name: "reporting-service"
+    static_configs:
+      - targets: ["reporting-service:4006"]
+    metrics_path: "/metrics"
+    scrape_interval: 60s
+
+  # Database monitoring
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # Redis monitoring
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  # Node Exporter for system metrics
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
