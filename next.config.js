@@ -11,7 +11,7 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL:
       process.env.NEXT_PUBLIC_API_URL ||
       (process.env.NODE_ENV === "production"
-        ? "https://trading-platform-backend.onrender.com"
+        ? "https://trading-platform-backend-g3us.onrender.com"
         : "http://localhost:4000"),
   },
   async rewrites() {

@@ -10,7 +10,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        value: https://trading-platform-backend.onrender.com
+        value: https://trading-platform-backend-g3us.onrender.com
     healthCheckPath: /api/system/health
     region: frankfurt
 
@@ -28,7 +28,7 @@ services:
       - key: PORT
         value: 10000
       - key: CORS_ORIGIN
-        value: https://trading-platform-5w7e.onrender.com
+        value: https://trading-platform-frontend-hgjo.onrender.com
       - key: JWT_SECRET
         generateValue: true
       - key: SESSION_SECRET

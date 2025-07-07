@@ -53,7 +53,7 @@ class ApiGateway {
       origin: [
         "http://localhost:3000", // Development frontend
         "http://localhost:3001", // Alternative dev port
-        process.env.CORS_ORIGIN || "https://trading-platform-5w7e.onrender.com", // Production frontend
+        process.env.CORS_ORIGIN || "https://trading-platform-frontend-hgjo.onrender.com", // Production frontend
         /.*\.onrender\.com$/, // Allow all Render deployments
       ],
       credentials: true,
