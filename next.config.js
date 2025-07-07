@@ -14,6 +14,21 @@ const nextConfig = {
         ? "https://trading-platform-backend-g3us.onrender.com"
         : "http://localhost:4000"),
   },
+  // Exclude exchange-rate-system from TypeScript compilation
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  // Exclude exchange-rate-system from the build process
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Ignore exchange-rate-system directory during build
+    config.module.rules.push({
+      test: /\.tsx?$/,
+      include: /exchange-rate-system/,
+      use: "ignore-loader",
+    });
+
+    return config;
+  },
   async rewrites() {
     // Proxy API calls to backend in development
     if (process.env.NODE_ENV === "development") {
@@ -26,14 +41,13 @@ const nextConfig = {
     }
     return [];
   },
-  // Optimize for production
+  // Disable problematic optimizations for production builds
   experimental: {
-    optimizeCss: true,
+    // Remove optimizeCss to fix critters module error
   },
-  // Disable telemetry for cleaner logs
-  telemetry: {
-    disabled: true,
-  },
+  // Configure dynamic routes to avoid static generation issues
+  generateEtags: false,
+  poweredByHeader: false,
 };
 
 module.exports = nextConfig;

@@ -1,0 +1,4 @@
+exchange-rate-system/
+node_modules/
+.git/
+*.log 

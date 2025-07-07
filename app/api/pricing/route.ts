@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 const PRICING_SERVICE_URL =
   process.env.PRICING_SERVICE_URL || "http://localhost:4001";
 const API_KEY = process.env.API_KEY || "test-partner-abc123";
