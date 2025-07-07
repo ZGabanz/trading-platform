@@ -6,13 +6,6 @@ const nextConfig = {
   swcMinify: true,
   reactStrictMode: true,
   transpilePackages: ["lucide-react"],
-  env: {
-    NEXT_PUBLIC_API_URL:
-      process.env.NEXT_PUBLIC_API_URL ||
-      (process.env.NODE_ENV === "production"
-        ? "https://trading-platform-backend-g3us.onrender.com"
-        : "http://localhost:4000"),
-  },
   // Exclude exchange-rate-system from TypeScript compilation
   typescript: {
     ignoreBuildErrors: false,

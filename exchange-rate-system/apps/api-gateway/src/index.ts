@@ -43,7 +43,12 @@ class ApiGateway {
       ],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "x-requested-with",
+        "x-api-key",
+      ],
       optionsSuccessStatus: 200,
     };
 

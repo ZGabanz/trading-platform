@@ -81,7 +81,12 @@ class ExchangeRateAPI {
 
   constructor(apiKey: string = DEV_API_KEY) {
     this.apiKey = apiKey;
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    // Use environment variable in production, fallback to local for development
+    this.baseURL =
+      process.env.NEXT_PUBLIC_API_URL || // Use configured backend URL
+      (typeof window !== "undefined"
+        ? window.location.origin // Client-side: use current domain
+        : "http://localhost:3000"); // Server-side: use localhost for SSR
   }
 
   private async delay(ms: number): Promise<void> {
