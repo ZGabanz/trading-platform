@@ -11,7 +11,7 @@
   "scripts": {
     "dev:all": "concurrently \"npm run dev:services\" \"npm run dev:apps\"",
     "dev:services": "concurrently \"npm run dev -w services/pricing-core\" \"npm run dev -w services/p2p-parser\" \"npm run dev -w services/rapira-parser\" \"npm run dev -w services/deal-automation\" \"npm run dev -w services/notification-service\" \"npm run dev -w services/reporting-service\"",
-    "dev:apps": "concurrently \"npm run dev -w apps/api-gateway\" \"npm run dev -w apps/manager-panel\" \"npm run dev -w apps/partner-cabinet\"",
+    "dev:apps": "npm run dev -w apps/api-gateway",
     "dev:pricing": "npm run dev -w services/pricing-core",
     "dev:p2p": "npm run dev -w services/p2p-parser",
     "dev:gateway": "npm run dev -w apps/api-gateway",
@@ -19,7 +19,8 @@
     "dev:partner": "npm run dev -w apps/partner-cabinet",
     "build:all": "npm run build:services && npm run build:apps",
     "build:services": "npm run build -w services/pricing-core && npm run build -w services/p2p-parser && npm run build -w services/rapira-parser && npm run build -w services/deal-automation && npm run build -w services/notification-service && npm run build -w services/reporting-service",
-    "build:apps": "npm run build -w apps/api-gateway && npm run build -w apps/manager-panel && npm run build -w apps/partner-cabinet",
+    "build:apps": "npm run build -w apps/api-gateway",
+    "start": "npm run start -w apps/api-gateway",
     "test:all": "npm run test -w services/pricing-core && npm run test -w services/p2p-parser && npm run test -w services/deal-automation",
     "lint:all": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
