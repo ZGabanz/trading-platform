@@ -20,7 +20,7 @@ services:
     env: node
     plan: free
     rootDir: exchange-rate-system
-    buildCommand: npm install && npm run build:apps
+    buildCommand: npm install --include=dev && npm install --include=dev -w apps/api-gateway && npm run build:apps
     startCommand: npm run start -w apps/api-gateway
     envVars:
       - key: NODE_ENV
