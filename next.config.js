@@ -11,18 +11,28 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL:
       process.env.NEXT_PUBLIC_API_URL ||
       (process.env.NODE_ENV === "production"
-        ? process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : process.env.RENDER_EXTERNAL_URL || "https://your-app.vercel.app"
-        : "http://localhost:3000"),
+        ? "https://trading-platform-backend.onrender.com"
+        : "http://localhost:4000"),
   },
   async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "/api/:path*",
-      },
-    ];
+    // Proxy API calls to backend in development
+    if (process.env.NODE_ENV === "development") {
+      return [
+        {
+          source: "/api/backend/:path*",
+          destination: "http://localhost:4000/api/:path*",
+        },
+      ];
+    }
+    return [];
+  },
+  // Optimize for production
+  experimental: {
+    optimizeCss: true,
+  },
+  // Disable telemetry for cleaner logs
+  telemetry: {
+    disabled: true,
   },
 };
 

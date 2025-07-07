@@ -1,6 +1,7 @@
 services:
+  # Frontend (Next.js)
   - type: web
-    name: financial-dashboard
+    name: trading-platform-frontend
     env: node
     plan: free
     buildCommand: npm install && npm run build
@@ -9,5 +10,28 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        value: https://financial-dashboard.onrender.com
+        value: https://trading-platform-backend.onrender.com
     healthCheckPath: /api/system/health
+    region: frankfurt
+
+  # Backend API Gateway
+  - type: web
+    name: trading-platform-backend
+    env: node
+    plan: free
+    rootDir: exchange-rate-system
+    buildCommand: npm install && npm run build:apps
+    startCommand: npm run start -w apps/api-gateway
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        value: https://trading-platform-5w7e.onrender.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+    healthCheckPath: /health
+    region: frankfurt

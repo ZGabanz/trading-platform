@@ -47,12 +47,22 @@ class ApiGateway {
   private setupMiddleware(): void {
     // Security middleware
     this.app.use(helmet());
-    this.app.use(
-      cors({
-        origin: ["http://localhost:3000", "http://localhost:3001"],
-        credentials: true,
-      })
-    );
+    
+    // CORS configuration for Render deployment
+    const corsOptions = {
+      origin: [
+        "http://localhost:3000", // Development frontend
+        "http://localhost:3001", // Alternative dev port
+        process.env.CORS_ORIGIN || "https://trading-platform-5w7e.onrender.com", // Production frontend
+        /.*\.onrender\.com$/, // Allow all Render deployments
+      ],
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
+      optionsSuccessStatus: 200,
+    };
+    
+    this.app.use(cors(corsOptions));
 
     // Rate limiting
     const limiter = rateLimit({
