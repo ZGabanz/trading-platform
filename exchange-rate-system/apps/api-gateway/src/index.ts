@@ -31,13 +31,14 @@ class ApiGateway {
   private setupMiddleware(): void {
     // Security middleware
     this.app.use(helmet());
-    
+
     // CORS configuration for Render deployment
     const corsOptions = {
       origin: [
         "http://localhost:3000", // Development frontend
         "http://localhost:3001", // Alternative dev port
-        process.env.CORS_ORIGIN || "https://trading-platform-frontend-hgjo.onrender.com", // Production frontend
+        process.env.CORS_ORIGIN ||
+          "https://trading-platform-frontend-hgjo.onrender.com", // Production frontend
         /.*\.onrender\.com$/, // Allow all Render deployments
       ],
       credentials: true,
@@ -45,7 +46,7 @@ class ApiGateway {
       allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
       optionsSuccessStatus: 200,
     };
-    
+
     this.app.use(cors(corsOptions));
 
     // Rate limiting
@@ -109,58 +110,68 @@ class ApiGateway {
     };
 
     // Auth routes
-    this.app.post("/auth/login", async (req: express.Request, res: express.Response) => {
-      try {
-        const { username, password } = req.body;
+    this.app.post(
+      "/auth/login",
+      async (req: express.Request, res: express.Response) => {
+        try {
+          const { username, password } = req.body;
 
-        // Mock authentication - replace with real auth logic
-        if (username === "admin" && password === "admin123") {
-          const token = jwt.sign(
-            {
+          // Mock authentication - replace with real auth logic
+          if (username === "admin" && password === "admin123") {
+            const token = jwt.sign(
+              {
+                id: 1,
+                username: "admin",
+                role: "admin",
+                permissions: ["read", "write", "admin"],
+              },
+              process.env.JWT_SECRET || "default-jwt-secret",
+              { expiresIn: "24h" }
+            );
+
+            (req as any).session.user = {
               id: 1,
               username: "admin",
               role: "admin",
-              permissions: ["read", "write", "admin"],
-            },
-            process.env.JWT_SECRET || "default-jwt-secret",
-            { expiresIn: "24h" }
-          );
+            };
 
-          (req as any).session.user = {
-            id: 1,
-            username: "admin",
-            role: "admin",
-          };
-
-          res.json({
-            token,
-            user: {
-              id: 1,
-              username: "admin",
-              role: "admin",
-              permissions: ["read", "write", "admin"],
-            },
-          });
-        } else {
-          res.status(401).json({ error: "Invalid credentials" });
+            res.json({
+              token,
+              user: {
+                id: 1,
+                username: "admin",
+                role: "admin",
+                permissions: ["read", "write", "admin"],
+              },
+            });
+          } else {
+            res.status(401).json({ error: "Invalid credentials" });
+          }
+        } catch (error) {
+          res.status(500).json({ error: "Authentication failed" });
         }
-      } catch (error) {
-        res.status(500).json({ error: "Authentication failed" });
       }
-    });
+    );
 
-    this.app.post("/auth/logout", (req: express.Request, res: express.Response) => {
-      (req as any).session.destroy((err: any) => {
-        if (err) {
-          return res.status(500).json({ error: "Logout failed" });
-        }
-        res.json({ message: "Logged out successfully" });
-      });
-    });
+    this.app.post(
+      "/auth/logout",
+      (req: express.Request, res: express.Response) => {
+        (req as any).session.destroy((err: any) => {
+          if (err) {
+            return res.status(500).json({ error: "Logout failed" });
+          }
+          res.json({ message: "Logged out successfully" });
+        });
+      }
+    );
 
-    this.app.get("/auth/me", authenticateToken, (req: express.Request, res: express.Response) => {
-      res.json({ user: (req as any).user });
-    });
+    this.app.get(
+      "/auth/me",
+      authenticateToken,
+      (req: express.Request, res: express.Response) => {
+        res.json({ user: (req as any).user });
+      }
+    );
 
     // Store auth middleware for later use
     (this.app as any).authenticateToken = authenticateToken;
@@ -186,54 +197,57 @@ class ApiGateway {
     });
 
     // Service status endpoints
-    this.app.get("/api/v1/status", async (req: express.Request, res: express.Response) => {
-      try {
-        const services = [
-          { name: "pricing-core", url: "http://pricing-core:4001/health" },
-          { name: "p2p-parser", url: "http://p2p-parser:4002/health" },
-          { name: "rapira-parser", url: "http://rapira-parser:4003/health" },
-          {
-            name: "deal-automation",
-            url: "http://deal-automation:4004/health",
-          },
-          {
-            name: "notification-service",
-            url: "http://notification-service:4005/health",
-          },
-          {
-            name: "reporting-service",
-            url: "http://reporting-service:4006/health",
-          },
-        ];
+    this.app.get(
+      "/api/v1/status",
+      async (req: express.Request, res: express.Response) => {
+        try {
+          const services = [
+            { name: "pricing-core", url: "http://pricing-core:4001/health" },
+            { name: "p2p-parser", url: "http://p2p-parser:4002/health" },
+            { name: "rapira-parser", url: "http://rapira-parser:4003/health" },
+            {
+              name: "deal-automation",
+              url: "http://deal-automation:4004/health",
+            },
+            {
+              name: "notification-service",
+              url: "http://notification-service:4005/health",
+            },
+            {
+              name: "reporting-service",
+              url: "http://reporting-service:4006/health",
+            },
+          ];
 
-        const statusChecks = services.map(async (service) => {
-          try {
-            const axios = require("axios");
-            const response = await axios.get(service.url, { timeout: 5000 });
-            return {
-              name: service.name,
-              status: "healthy",
-              responseTime: response.headers["x-response-time"] || "N/A",
-            };
-          } catch (error) {
-            return {
-              name: service.name,
-              status: "unhealthy",
-              error: "Service unavailable",
-            };
-          }
-        });
+          const statusChecks = services.map(async (service) => {
+            try {
+              const axios = require("axios");
+              const response = await axios.get(service.url, { timeout: 5000 });
+              return {
+                name: service.name,
+                status: "healthy",
+                responseTime: response.headers["x-response-time"] || "N/A",
+              };
+            } catch (error) {
+              return {
+                name: service.name,
+                status: "unhealthy",
+                error: "Service unavailable",
+              };
+            }
+          });
 
-        const results = await Promise.all(statusChecks);
-        res.json({
-          gateway: "healthy",
-          services: results,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        res.status(500).json({ error: "Failed to check service status" });
+          const results = await Promise.all(statusChecks);
+          res.json({
+            gateway: "healthy",
+            services: results,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (error) {
+          res.status(500).json({ error: "Failed to check service status" });
+        }
       }
-    });
+    );
 
     // Root route
     this.app.get("/", (req: express.Request, res: express.Response) => {
@@ -278,7 +292,9 @@ class ApiGateway {
         },
         onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Pricing Core proxy error:", err);
-          (res as express.Response).status(502).json({ error: "Pricing service unavailable" });
+          (res as express.Response)
+            .status(502)
+            .json({ error: "Pricing service unavailable" });
         },
       })
     );
@@ -295,7 +311,9 @@ class ApiGateway {
         },
         onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("P2P Parser proxy error:", err);
-          (res as express.Response).status(502).json({ error: "P2P service unavailable" });
+          (res as express.Response)
+            .status(502)
+            .json({ error: "P2P service unavailable" });
         },
       })
     );
@@ -312,7 +330,9 @@ class ApiGateway {
         },
         onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Rapira Parser proxy error:", err);
-          (res as express.Response).status(502).json({ error: "Rapira service unavailable" });
+          (res as express.Response)
+            .status(502)
+            .json({ error: "Rapira service unavailable" });
         },
       })
     );
@@ -330,7 +350,9 @@ class ApiGateway {
         },
         onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Deal Automation proxy error:", err);
-          (res as express.Response).status(502).json({ error: "Deal service unavailable" });
+          (res as express.Response)
+            .status(502)
+            .json({ error: "Deal service unavailable" });
         },
       })
     );
@@ -349,7 +371,9 @@ class ApiGateway {
         },
         onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Notification Service proxy error:", err);
-          (res as express.Response).status(502).json({ error: "Notification service unavailable" });
+          (res as express.Response)
+            .status(502)
+            .json({ error: "Notification service unavailable" });
         },
       })
     );
@@ -367,7 +391,9 @@ class ApiGateway {
         },
         onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Reporting Service proxy error:", err);
-          (res as express.Response).status(502).json({ error: "Reporting service unavailable" });
+          (res as express.Response)
+            .status(502)
+            .json({ error: "Reporting service unavailable" });
         },
       })
     );
