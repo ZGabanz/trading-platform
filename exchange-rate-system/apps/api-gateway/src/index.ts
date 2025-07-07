@@ -9,8 +9,6 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import jwt from "jsonwebtoken";
 import session from "express-session";
-import { createClient } from "redis";
-import RedisStore from "connect-redis";
 
 /**
  * API Gateway
@@ -19,29 +17,15 @@ import RedisStore from "connect-redis";
 class ApiGateway {
   private app: express.Application;
   private server: any;
-  private redisClient: any;
 
   constructor() {
     this.app = express();
-    this.initializeRedis();
     this.setupMiddleware();
     this.setupAuth();
     this.setupRoutes();
     this.setupProxies();
     this.setupSwagger();
     this.setupErrorHandling();
-  }
-
-  private async initializeRedis(): Promise<void> {
-    try {
-      this.redisClient = createClient({
-        url: `redis://${process.env.REDIS_HOST || "localhost"}:${process.env.REDIS_PORT || 6379}`,
-      });
-      await this.redisClient.connect();
-      console.log("Redis connected successfully");
-    } catch (error) {
-      console.error("Redis connection failed:", error);
-    }
   }
 
   private setupMiddleware(): void {
@@ -84,27 +68,19 @@ class ApiGateway {
   }
 
   private setupAuth(): void {
-    // Session configuration
-    if (this.redisClient) {
-      const redisStore = new RedisStore({
-        client: this.redisClient,
-        prefix: "gateway:sess:",
-      });
-
-      this.app.use(
-        session({
-          store: redisStore,
-          secret: process.env.SESSION_SECRET || "default-session-secret",
-          resave: false,
-          saveUninitialized: false,
-          cookie: {
-            secure: false, // Set to true in production with HTTPS
-            httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          },
-        })
-      );
-    }
+    // Simple session configuration without Redis for now
+    this.app.use(
+      session({
+        secret: process.env.SESSION_SECRET || "default-session-secret",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          secure: false, // Set to true in production with HTTPS
+          httpOnly: true,
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        },
+      })
+    );
 
     // JWT authentication middleware
     const authenticateToken = (
@@ -133,7 +109,7 @@ class ApiGateway {
     };
 
     // Auth routes
-    this.app.post("/auth/login", async (req, res) => {
+    this.app.post("/auth/login", async (req: express.Request, res: express.Response) => {
       try {
         const { username, password } = req.body;
 
@@ -173,7 +149,7 @@ class ApiGateway {
       }
     });
 
-    this.app.post("/auth/logout", (req, res) => {
+    this.app.post("/auth/logout", (req: express.Request, res: express.Response) => {
       (req as any).session.destroy((err: any) => {
         if (err) {
           return res.status(500).json({ error: "Logout failed" });
@@ -182,7 +158,7 @@ class ApiGateway {
       });
     });
 
-    this.app.get("/auth/me", authenticateToken, (req, res) => {
+    this.app.get("/auth/me", authenticateToken, (req: express.Request, res: express.Response) => {
       res.json({ user: (req as any).user });
     });
 
@@ -192,7 +168,7 @@ class ApiGateway {
 
   private setupRoutes(): void {
     // Health check
-    this.app.get("/health", (req, res) => {
+    this.app.get("/health", (req: express.Request, res: express.Response) => {
       res.json({
         service: "API Gateway",
         status: "running",
@@ -210,7 +186,7 @@ class ApiGateway {
     });
 
     // Service status endpoints
-    this.app.get("/api/v1/status", async (req, res) => {
+    this.app.get("/api/v1/status", async (req: express.Request, res: express.Response) => {
       try {
         const services = [
           { name: "pricing-core", url: "http://pricing-core:4001/health" },
@@ -260,7 +236,7 @@ class ApiGateway {
     });
 
     // Root route
-    this.app.get("/", (req, res) => {
+    this.app.get("/", (req: express.Request, res: express.Response) => {
       res.json({
         service: "Exchange Rate System API Gateway",
         version: "1.0.0",
@@ -300,9 +276,9 @@ class ApiGateway {
         pathRewrite: {
           "^/api/v1/pricing": "/api/v1/pricing",
         },
-        onError: (err, req, res) => {
+        onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Pricing Core proxy error:", err);
-          res.status(502).json({ error: "Pricing service unavailable" });
+          (res as express.Response).status(502).json({ error: "Pricing service unavailable" });
         },
       })
     );
@@ -317,9 +293,9 @@ class ApiGateway {
         pathRewrite: {
           "^/api/v1/p2p": "/api/v1",
         },
-        onError: (err, req, res) => {
+        onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("P2P Parser proxy error:", err);
-          res.status(502).json({ error: "P2P service unavailable" });
+          (res as express.Response).status(502).json({ error: "P2P service unavailable" });
         },
       })
     );
@@ -334,9 +310,9 @@ class ApiGateway {
         pathRewrite: {
           "^/api/v1/rapira": "/api/v1",
         },
-        onError: (err, req, res) => {
+        onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Rapira Parser proxy error:", err);
-          res.status(502).json({ error: "Rapira service unavailable" });
+          (res as express.Response).status(502).json({ error: "Rapira service unavailable" });
         },
       })
     );
@@ -352,9 +328,9 @@ class ApiGateway {
         pathRewrite: {
           "^/api/v1/deals": "/api/v1",
         },
-        onError: (err, req, res) => {
+        onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Deal Automation proxy error:", err);
-          res.status(502).json({ error: "Deal service unavailable" });
+          (res as express.Response).status(502).json({ error: "Deal service unavailable" });
         },
       })
     );
@@ -371,9 +347,9 @@ class ApiGateway {
         pathRewrite: {
           "^/api/v1/notifications": "/api/v1",
         },
-        onError: (err, req, res) => {
+        onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Notification Service proxy error:", err);
-          res.status(502).json({ error: "Notification service unavailable" });
+          (res as express.Response).status(502).json({ error: "Notification service unavailable" });
         },
       })
     );
@@ -389,9 +365,9 @@ class ApiGateway {
         pathRewrite: {
           "^/api/v1/reports": "/api/v1/reports",
         },
-        onError: (err, req, res) => {
+        onError: (err: any, req: express.Request, res: express.Response) => {
           console.error("Reporting Service proxy error:", err);
-          res.status(502).json({ error: "Reporting service unavailable" });
+          (res as express.Response).status(502).json({ error: "Reporting service unavailable" });
         },
       })
     );
@@ -436,7 +412,7 @@ class ApiGateway {
 
   private setupErrorHandling(): void {
     // 404 handler
-    this.app.use("*", (req, res) => {
+    this.app.use("*", (req: express.Request, res: express.Response) => {
       res.status(404).json({
         error: "Route not found",
         path: req.originalUrl,
@@ -485,9 +461,6 @@ class ApiGateway {
       if (this.server) {
         this.server.close(() => {
           console.log("API Gateway shut down gracefully");
-          if (this.redisClient) {
-            this.redisClient.quit();
-          }
           process.exit(0);
         });
       }
