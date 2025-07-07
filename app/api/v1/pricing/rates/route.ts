@@ -2,68 +2,117 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const PRICING_SERVICE_URL =
+  process.env.NODE_ENV === "production"
+    ? process.env.NEXT_PUBLIC_API_URL ||
+      "https://trading-platform-backend-g3us.onrender.com"
+    : process.env.PRICING_SERVICE_URL || "http://localhost:4001";
+const API_KEY = process.env.API_KEY || "test-partner-abc123";
+
+// Mock rates data
+const MOCK_RATES_DATA = {
+  success: true,
+  data: [
+    {
+      symbol: "EUR/USD",
+      rate: 1.0856,
+      bid: 1.0854,
+      ask: 1.0858,
+      spread: 0.0004,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      symbol: "GBP/USD",
+      rate: 1.2678,
+      bid: 1.2675,
+      ask: 1.2681,
+      spread: 0.0006,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      symbol: "USD/JPY",
+      rate: 149.85,
+      bid: 149.82,
+      ask: 149.88,
+      spread: 0.06,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      symbol: "USD/EUR",
+      rate: 0.9211,
+      bid: 0.9209,
+      ask: 0.9213,
+      spread: 0.0004,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      symbol: "BTC/USD",
+      rate: 43500,
+      bid: 43480,
+      ask: 43520,
+      spread: 40,
+      timestamp: new Date().toISOString(),
+    },
+  ],
+  timestamp: new Date().toISOString(),
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const symbolsParam = searchParams.get("symbols");
+    const symbols = searchParams.get("symbols")?.split(",") || ["EUR/USD"];
     const method = searchParams.get("method") || "FIXED_SPREAD";
 
-    const symbols = symbolsParam
-      ? symbolsParam.split(",")
-      : ["USD/EUR", "EUR/USD", "USD/GBP", "GBP/USD"];
+    // In production, return mock data
+    if (process.env.NODE_ENV === "production") {
+      const filteredData = MOCK_RATES_DATA.data.filter((item) =>
+        symbols.includes(item.symbol)
+      );
 
-    // Mock exchange rates with some randomness
-    const baseRates: Record<string, number> = {
-      "USD/EUR": 0.85,
-      "EUR/USD": 1.18,
-      "USD/GBP": 0.73,
-      "GBP/USD": 1.37,
-      "USD/JPY": 110.25,
-      "JPY/USD": 0.0091,
-      "EUR/GBP": 0.86,
-      "GBP/EUR": 1.16,
-      "BTC/USD": 45000,
-      "USD/BTC": 0.000022,
-      "ETH/USD": 3200,
-      "USD/ETH": 0.0003125,
-    };
-
-    const data: Record<string, any> = {};
-
-    symbols.forEach((symbol) => {
-      const baseRate = baseRates[symbol] || 1.0;
-      // Add some randomness to simulate real market fluctuations
-      const fluctuation = (Math.random() - 0.5) * 0.02; // ±1% fluctuation
-      const currentRate = baseRate * (1 + fluctuation);
-
-      data[symbol] = {
-        symbol,
-        rate: currentRate,
-        bid: currentRate * 0.998,
-        ask: currentRate * 1.002,
-        spread: currentRate * 0.004,
-        spreadPercentage: 0.4,
-        timestamp: new Date().toISOString(),
+      return NextResponse.json({
+        ...MOCK_RATES_DATA,
+        data:
+          filteredData.length > 0
+            ? filteredData
+            : MOCK_RATES_DATA.data.slice(0, 1),
         method,
-        volume24h: Math.floor(Math.random() * 1000000) + 100000,
-        change24h: (Math.random() - 0.5) * 0.1, // ±5% daily change
-      };
-    });
+      });
+    }
 
-    // Simulate processing time
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    return NextResponse.json({
-      success: true,
-      data,
-      timestamp: new Date().toISOString(),
-      method,
-    });
-  } catch (error) {
-    console.error("Rates fetch error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch rates" },
-      { status: 500 }
+    // Development environment - try to reach actual service
+    const response = await fetch(
+      `${PRICING_SERVICE_URL}/api/v1/pricing/rates?symbols=${symbols.join(
+        ","
+      )}&method=${method}`,
+      {
+        headers: {
+          "X-API-Key": API_KEY,
+          "Content-Type": "application/json",
+        },
+        signal: AbortSignal.timeout(5000),
+      }
     );
+
+    if (!response.ok) {
+      console.warn(`Rates service error: ${response.status}, using mock data`);
+      const filteredData = MOCK_RATES_DATA.data.filter((item) =>
+        symbols.includes(item.symbol)
+      );
+
+      return NextResponse.json({
+        ...MOCK_RATES_DATA,
+        data:
+          filteredData.length > 0
+            ? filteredData
+            : MOCK_RATES_DATA.data.slice(0, 1),
+        method,
+      });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.warn("Rates API error, using mock data:", error);
+    return NextResponse.json(MOCK_RATES_DATA);
   }
 }
