@@ -1,7 +1,7 @@
 services:
   # Frontend (Next.js)
   - type: web
-    name: trading-platform-frontend
+    name: test-app-web
     env: node
     plan: free
     buildCommand: npm install && npm run build
@@ -9,8 +9,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: NEXT_PUBLIC_API_URL
-        value: https://trading-platform-backend-g3us.onrender.com
+      - key: PORT
+        value: 10000
     healthCheckPath: /api/system/health
     region: frankfurt
 
@@ -28,10 +28,12 @@ services:
       - key: PORT
         value: 10000
       - key: CORS_ORIGIN
-        value: https://trading-platform-frontend-hgjo.onrender.com
+        value: "*"
       - key: JWT_SECRET
         generateValue: true
       - key: SESSION_SECRET
         generateValue: true
+      - key: API_KEY
+        value: test-partner-abc123
     healthCheckPath: /health
     region: frankfurt

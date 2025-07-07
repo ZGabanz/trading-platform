@@ -81,12 +81,12 @@ class ExchangeRateAPI {
 
   constructor(apiKey: string = DEV_API_KEY) {
     this.apiKey = apiKey;
-    // Use environment variable in production, fallback to local for development
+    // В продакшене используем Next.js API routes как прокси к бэкенду
+    // Это решает проблемы с CORS и аутентификацией
     this.baseURL =
-      process.env.NEXT_PUBLIC_API_URL || // Use configured backend URL
-      (typeof window !== "undefined"
-        ? window.location.origin // Client-side: use current domain
-        : "http://localhost:3000"); // Server-side: use localhost for SSR
+      typeof window !== "undefined"
+        ? window.location.origin // Клиент: всегда через локальные API routes
+        : "http://localhost:3000"; // Сервер: localhost для SSR
   }
 
   private async delay(ms: number): Promise<void> {
